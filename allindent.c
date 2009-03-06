@@ -113,8 +113,8 @@ int main(int argc, char **argv)
         lindent = indenter;
 
         /* did we start in a string/comment? */
-        sinstring = 0;
-        sincomment = 0;
+        sinstring = instring;
+        sincomment = incomment;
 
         /* skip past the whitespace */
         for (i = 0; readbuf[i] && strchr(WHITESPACE, readbuf[i]); i++);
