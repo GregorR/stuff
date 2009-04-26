@@ -1,0 +1,2 @@
+#!/bin/bash
+echo "$@" | socat STDIN UNIX-SENDTO:/tmp/simplebot."$4"
