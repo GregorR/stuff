@@ -1,0 +1,7 @@
+#!/bin/bash
+CHANNEL="$4"
+cd simplebot_cmds
+(
+    echo -n 'Supported commands: '
+    echo *
+) | socat STDIN UNIX-SENDTO:/tmp/simplebot."$CHANNEL"
