@@ -1,6 +1,6 @@
 #!/bin/bash
 CHANNEL="$4"
-cd simplebot_cmds
+cd "`dirname $0`"
 (
     echo -n 'Supported commands: '
     echo *
