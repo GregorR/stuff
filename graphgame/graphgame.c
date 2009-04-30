@@ -13,11 +13,29 @@ char *nodeName(int num)
     numlo = num % 26;
     if (numhi >= 26) numhi = 25;
 
-    name = GC_MALLOC(3);
+    name = GC_MALLOC_ATOMIC(3);
     name[0] = 'A' + numhi;
     name[1] = 'A' + numlo;
     name[2] = '\0';
     return name;
+}
+
+void drawEdge(int nodec, int fromn)
+{
+    char *from, *to;
+    if (fromn < 0) {
+        from = nodeName(random() % nodec);
+    } else {
+        from = nodeName(fromn);
+    }
+
+    do {
+        to = nodeName(random() % nodec);
+    } while (!strcmp(from, to));
+
+    printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
+           from, to,
+           random() % 0x80, random() % 0x80, random() % 0x80);
 }
 
 int main(int argc, char **argv)
@@ -41,14 +59,10 @@ int main(int argc, char **argv)
                (i <= (nodec/3)) ? ", shape=\"box\"" : "");
     }
     for (i = 0; i < nodec && i < edgec; i++) {
-        printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
-               nodeName(i), nodeName(random() % nodec),
-               random() % 0x80, random() % 0x80, random() % 0x80);
+        drawEdge(nodec, i);
     }
     for (; i < edgec; i++) {
-        printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
-               nodeName(random() % nodec), nodeName(random() % nodec),
-               random() % 0x80, random() % 0x80, random() % 0x80);
+        drawEdge(nodec, -1);
     }
     printf("}\n");
 
