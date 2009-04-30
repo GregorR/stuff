@@ -246,7 +246,7 @@ void handleMessage(int argc, char **args)
 void sockRead(int fd, short i0, void *i1)
 {
     int rd, skip;
-    char *endl;
+    char *endl, *cr;
 
     /* get this input */
     while ((rd = read(fd, sockBuf.buf + sockBuf.bufused, sockBuf.bufsz - sockBuf.bufused)) > 0) {
@@ -259,6 +259,9 @@ void sockRead(int fd, short i0, void *i1)
     /* look for \n */
     while ((endl = strchr(sockBuf.buf, '\n'))) {
         *endl = '\0';
+
+        /* clear any tricky \rs */
+        while ((cr = strchr(sockBuf.buf, '\r'))) *cr = '\0';
 
         /* print it out */
         printf("%.*s\r\n", MAX_MSG_LEN, sockBuf.buf);
