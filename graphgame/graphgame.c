@@ -35,11 +35,17 @@ int main(int argc, char **argv)
     srandom(time(NULL));
 
     printf("digraph {\n"
-           "AA [style=\"filled\", bgcolor=\"#DDDDDD\"];\n");
+           "AA [label=\"\", style=\"filled\", bgcolor=\"#DDDDDD\"];\n");
     for (i = 1; i < nodec; i++) {
-        printf("%s;\n", nodeName(i));
+        printf("%s [label=\"\"%s];\n", nodeName(i),
+               (i <= (nodec/3)) ? ", shape=\"box\"" : "");
     }
-    for (i = 0; i < edgec; i++) {
+    for (i = 0; i < nodec && i < edgec; i++) {
+        printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
+               nodeName(i), nodeName(random() % nodec),
+               random() % 0x80, random() % 0x80, random() % 0x80);
+    }
+    for (; i < edgec; i++) {
         printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
                nodeName(random() % nodec), nodeName(random() % nodec),
                random() % 0x80, random() % 0x80, random() % 0x80);
