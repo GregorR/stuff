@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
 #include <gc/gc.h>
 
-#define ISMAGIC(_nodec, _node) ((_node) > 1 && (_node) <= (_nodec)/3+1)
+#define ISMAGIC(_node) ((_node) > 1 && (_node) <= nodec/3+1)
+
+int nodec;
 
 char *nodeName(int num)
 {
@@ -24,39 +27,49 @@ char *nodeName(int num)
     return name;
 }
 
-static inline int randomNonMagic(int nodec)
+static inline int randomNonMagic()
 {
     int v;
     do {
         v = random() % (nodec - (nodec/3));
-    } while (ISMAGIC(nodec, v));
+    } while (ISMAGIC(v));
     return v;
 }
 
-void drawEdge(int nodec, int fromo, int too)
+void drawEdge(int fromo, int too)
 {
     int fromn, ton;
     char *from, *to;
+    static char *haveLink = NULL;
+
+    /* keep track of the links we already have to avoid repetition */
+    if (haveLink == NULL) {
+        haveLink = GC_MALLOC_ATOMIC(nodec * nodec);
+        memset(haveLink, 0, nodec * nodec);
+    }
 
 retry:
     fromn = fromo;
     ton = too;
 
     if (fromn < 0) {
-        if (ISMAGIC(nodec, ton))
-            fromn = randomNonMagic(nodec);
+        if (ISMAGIC(ton))
+            fromn = randomNonMagic();
         else
             fromn = random() % nodec;
     }
 
     if (ton < 0) {
-        if (ISMAGIC(nodec, fromn))
-            ton = randomNonMagic(nodec);
+        if (ISMAGIC(fromn))
+            ton = randomNonMagic();
         else
             ton = random() % nodec;
     }
 
-    if (fromn == ton) goto retry;
+    if (fromn == ton ||
+        (fromn <= 1 && ton <= 1) ||
+        haveLink[fromn*nodec+ton]) goto retry;
+    haveLink[fromn*nodec+ton] = 1;
     from = nodeName(fromn);
     to = nodeName(ton);
 
@@ -67,7 +80,7 @@ retry:
 
 int main(int argc, char **argv)
 {
-    int nodec, edgec, i, f;
+    int edgec, i, f;
     unsigned int seed;
 
     if (argc < 3) {
@@ -92,20 +105,20 @@ int main(int argc, char **argv)
            nodec, edgec, seed);
     for (i = 2; i < nodec; i++) {
         printf("%s [label=\"\"%s];\n", nodeName(i),
-               ISMAGIC(nodec, i) ? "" : ", shape=\"box\"");
+               ISMAGIC(i) ? "" : ", shape=\"box\"");
     }
     for (i = 0; i < nodec && i < edgec; i++) {
-        drawEdge(nodec, i, -1);
+        drawEdge(i, -1);
     }
     if (edgec >= nodec * 2) {
         /* guarantee that every node has an input */
         for (i = 0; i < nodec; i++) {
-            drawEdge(nodec, -1, i);
+            drawEdge(-1, i);
         }
         i += nodec;
     }
     for (; i < edgec; i++) {
-        drawEdge(nodec, -1, -1);
+        drawEdge(-1, -1);
     }
     printf("}\n");
 
