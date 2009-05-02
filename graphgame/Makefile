@@ -11,7 +11,8 @@ graphgame: graphgame.c
 .SUFFIXES: .dot .dpdf .pdf
 
 .dot.dpdf:
-	fdp $< -Gsplines=true -Tpdf -o $@
+	dot $< -Gsplines=true -Tpdf -o $@
+	#fdp $< -Gsplines=true -Tpdf -o $@
 
 .dpdf.pdf:
 	ln -f $< $*_dot.pdf
