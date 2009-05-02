@@ -10,6 +10,7 @@ EDGES="$2"
 PREFIX="${NODES}_${EDGES}"
 PAGES="$3"
 TITLE="GraphGame $NODES/$EDGES"
+GGMD5="// `md5sum graphgame.c`"
 
 # First generate them
 for (( i = 1; $i <= $PAGES; i++ ))
@@ -17,7 +18,10 @@ do
     echo $i >&2
     if [ ! -e ${PREFIX}_${i}.dot ]
     then
-        ./graphgame $NODES $EDGES $i > ${PREFIX}_${i}.dot
+        (
+            ./graphgame $NODES $EDGES $i
+            echo "$GGMD5"
+        ) > ${PREFIX}_${i}.dot
     fi
 done
 
