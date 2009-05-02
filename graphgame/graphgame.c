@@ -17,7 +17,7 @@ char *nodeName(int num)
     numlo = num % 26;
     if (numhi >= 26) numhi = 25;
 
-    name = GC_MALLOC(3);
+    name = GC_MALLOC_ATOMIC(3);
     name[0] = 'A' + numhi;
     name[1] = 'A' + numlo;
     name[2] = '\0';
@@ -31,6 +31,38 @@ static inline int randomNonMagic(int nodec)
         v = random() % (nodec - (nodec/3));
     } while (ISMAGIC(nodec, v));
     return v;
+}
+
+void drawEdge(int nodec, int fromo, int too)
+{
+    int fromn, ton;
+    char *from, *to;
+
+retry:
+    fromn = fromo;
+    ton = too;
+
+    if (fromn < 0) {
+        if (ISMAGIC(nodec, ton))
+            fromn = randomNonMagic(nodec);
+        else
+            fromn = random() % nodec;
+    }
+
+    if (ton < 0) {
+        if (ISMAGIC(nodec, fromn))
+            ton = randomNonMagic(nodec);
+        else
+            ton = random() % nodec;
+    }
+
+    if (fromn == ton) goto retry;
+    from = nodeName(fromn);
+    to = nodeName(ton);
+
+    printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
+           from, to,
+           random() % 0x80, random() % 0x80, random() % 0x80);
 }
 
 int main(int argc, char **argv)
@@ -63,33 +95,17 @@ int main(int argc, char **argv)
                ISMAGIC(nodec, i) ? "" : ", shape=\"box\"");
     }
     for (i = 0; i < nodec && i < edgec; i++) {
-        printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
-               nodeName(i),
-               nodeName(ISMAGIC(nodec, i) ?
-                   randomNonMagic(nodec) :
-                   random() % nodec),
-               random() % 0x80, random() % 0x80, random() % 0x80);
+        drawEdge(nodec, i, -1);
     }
     if (edgec >= nodec * 2) {
         /* guarantee that every node has an input */
         for (i = 0; i < nodec; i++) {
-            printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
-                   nodeName(ISMAGIC(nodec, i) ?
-                       randomNonMagic(nodec) :
-                       random() % nodec),
-                   nodeName(i),
-                   random() % 0x80, random() % 0x80, random() % 0x80);
+            drawEdge(nodec, -1, i);
         }
         i += nodec;
     }
     for (; i < edgec; i++) {
-        f = random() % nodec;
-        printf("%s -> %s [color=\"#%02X%02X%02X\"];\n",
-               nodeName(f),
-               nodeName(ISMAGIC(nodec, f) ?
-                   randomNonMagic(nodec) :
-                   random() % nodec),
-               random() % 0x80, random() % 0x80, random() % 0x80);
+        drawEdge(nodec, -1, -1);
     }
     printf("}\n");
 
