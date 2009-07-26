@@ -62,7 +62,6 @@ while (count($comics) < $panels) {
     }
 
     // verify that the file is usable
-    print "Trying $cfn ... " . imagesx($inimg) . "x" . imagesy($inimg) . "<br/>";
     if (imagesx($inimg) != $w || imagesy($inimg) != $h) {
         imagedestroy($inimg);
         continue;
