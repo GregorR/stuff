@@ -141,6 +141,12 @@ void ircRead(int fd, short i0, void *i1)
 
                 }
             }
+
+        } else if (!strncmp(ircBuf.buf, "PING", 4)) {
+            /* pong! */
+            printf("PONG :localhost\r\n");
+            fflush(stdout);
+
         }
 
         /* now skip this line */
