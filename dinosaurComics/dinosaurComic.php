@@ -3,6 +3,9 @@ $latest = 1538;
 $panels = 7; // 6 plus the footer
 $w = 735;
 $h = 500;
+$border = 3;
+$ow = $w;
+$oh = $h;
 $xs = array(
     array(0, 246),
     array(246, 375),
@@ -19,6 +22,38 @@ $ys = array(
     array(244, 487),
     array(244, 487),
     array(487, 500));
+$adjx = 0;
+$adjy = 0;
+
+$includePanels = array(0, 1, 2, 3, 4, 5, 6);
+
+// optionally choose a subset of panels
+if (isset($_REQUEST["panels"])) {
+    $rpanels = explode(",", $_REQUEST["panels"]);
+    $includePanels = array();
+    foreach ($rpanels as $panel) $includePanels[] = intval($panel);
+
+    // get the adjustment
+    $maxx = $maxy = 0;
+    $minx = $w;
+    $miny = $h;
+    foreach ($includePanels as $i) {
+        if ($i < 0 || $i > $panels) die("Invalid panel.");
+        if ($xs[$i][0] < $minx) $minx = $xs[$i][0];
+        if ($xs[$i][1] > $maxx) $maxx = $xs[$i][1];
+        if ($ys[$i][0] < $miny) $miny = $ys[$i][0];
+        if ($ys[$i][1] > $maxy) $maxy = $ys[$i][1];
+    }
+    if ($minx > 0) $minx -= $border;
+    if ($miny > 0) $miny -= $border;
+
+    $adjx = $minx;
+    $adjy = $miny;
+    $ow = $maxx - $minx;
+    $oh = $maxy - $miny;
+}
+if (count($includePanels) > $panels) die("Too many panels!");
+$panels = count($includePanels);
 
 // pick random comics
 $comics = array();
@@ -71,17 +106,18 @@ while (count($comics) < $panels) {
 }
 
 // now start producing our output
-$outimg = imagecreatetruecolor($w, $h);
+$outimg = imagecreatetruecolor($ow, $oh);
 
 // read in the comic images
 for ($i = 0; $i < $panels; $i++) {
     // read in this panel
     $inimg = $comics[$i];
+    $p = $includePanels[$i];
 
     // then copy it over
     imagecopy($outimg, $inimg,
-              $xs[$i][0], $ys[$i][0], $xs[$i][0], $ys[$i][0],
-              ($xs[$i][1] - $xs[$i][0]), ($ys[$i][1] - $ys[$i][0]));
+              $xs[$p][0] - $adjx, $ys[$p][0] - $adjy, $xs[$p][0], $ys[$p][0],
+              ($xs[$p][1] - $xs[$p][0]), ($ys[$p][1] - $ys[$p][0]));
     imagedestroy($inimg);
 }
 
