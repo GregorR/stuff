@@ -1,4 +1,26 @@
 <?PHP
+/*
+ * Copyright (C) 2009 Gregor Richards
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 $latest = 1538;
 $panels = 7; // 6 plus the footer
 $w = 735;
@@ -55,11 +77,24 @@ if (isset($_REQUEST["panels"])) {
 if (count($includePanels) > $panels) die("Too many panels!");
 $panels = count($includePanels);
 
+// potentially use supplied comics
+$incomics = array();
+if (isset($_REQUEST["comics"])) {
+    $incomicsprime = explode(",", $_REQUEST["comics"]);
+    $incomics = array();
+    foreach ($incomicsprime as $ic) $incomics[] = intval($ic);
+}
+
 // pick random comics
 $comics = array();
+$comicstrs = array();
 while (count($comics) < $panels) {
-    $comic = mt_rand(1, $latest);
-    if ($comic < 10) $comic = "0" . $comic; else $comic = "" . $comic;
+    if (count($incomics) > 0) {
+        $comic = array_shift($incomics);
+    } else {
+        $comic = mt_rand(1, $latest);
+        if ($comic < 10) $comic = "0" . $comic; else $comic = "" . $comic;
+    }
 
     // get the filename ...
     $fn = "comic2-" . $comic . ".png";
@@ -103,10 +138,18 @@ while (count($comics) < $panels) {
     }
 
     $comics[] = $inimg;
+    $comicstrs[] = $comic;
 }
 
+// make the permalink
+$comicstr = "?";
+if (isset($_REQUEST["panels"])) {
+    $comicstr .= "panels=" . $_REQUEST["panels"] . "&";
+}
+$comicstr .= "comics=" . implode(",", $comicstrs);
+
 // now start producing our output
-$outimg = imagecreatetruecolor($ow, $oh);
+$outimg = imagecreatetruecolor($ow, $oh + imagefontheight(1) + 2);
 
 // read in the comic images
 for ($i = 0; $i < $panels; $i++) {
@@ -120,6 +163,9 @@ for ($i = 0; $i < $panels; $i++) {
               ($xs[$p][1] - $xs[$p][0]), ($ys[$p][1] - $ys[$p][0]));
     imagedestroy($inimg);
 }
+
+// write the comicstr
+imagestring($outimg, 1, 1, $oh + 1, $comicstr, imagecolorallocate($outimg, 255, 255, 255));
 
 // and write out a png
 header("Content-type: image/png");
