@@ -149,7 +149,7 @@ if (isset($_REQUEST["panels"])) {
 $comicstr .= "comics=" . implode(",", $comicstrs);
 
 // now start producing our output
-$outimg = imagecreatetruecolor($ow, $oh + imagefontheight(1) + 2);
+$outimg = imagecreatetruecolor($ow, $oh + imagefontheight(1) + 4);
 
 // read in the comic images
 for ($i = 0; $i < $panels; $i++) {
@@ -165,7 +165,10 @@ for ($i = 0; $i < $panels; $i++) {
 }
 
 // write the comicstr
-imagestring($outimg, 1, 1, $oh + 1, $comicstr, imagecolorallocate($outimg, 255, 255, 255));
+$white = imagecolorallocate($outimg, 255, 255, 255);
+$grey = imagecolorallocate($outimg, 128, 128, 128);
+imagefilledrectangle($outimg, 0, $oh, imagesx($outimg), imagesy($outimg), $white);
+imagestring($outimg, 1, 2, $oh + 2, $comicstr, $grey);
 
 // and write out a png
 header("Content-type: image/png");
