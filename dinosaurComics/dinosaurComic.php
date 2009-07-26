@@ -35,7 +35,7 @@ while (count($comics) < $panels) {
         touch($cfn) || die();
 
         // open it ...
-        $fh = fopen("http://www.qwantz.com/comics/" . $fn, "r");
+        $fh = @fopen("http://www.qwantz.com/comics/" . $fn, "r");
         if ($fh === false) continue;
 
         // read it in ...
