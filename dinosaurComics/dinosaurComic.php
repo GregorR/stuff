@@ -61,7 +61,7 @@ if (isset($_REQUEST["panels"])) {
     $minx = $w;
     $miny = $h;
     foreach ($includePanels as $i) {
-        if ($i < 0 || $i > $panels) die("Invalid panel.");
+        if ($i < 0 || $i >= $panels) die("Invalid panel.");
         if ($xs[$i][0] < $minx) $minx = $xs[$i][0];
         if ($xs[$i][1] > $maxx) $maxx = $xs[$i][1];
         if ($ys[$i][0] < $miny) $miny = $ys[$i][0];
