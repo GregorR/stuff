@@ -110,7 +110,6 @@ while (count($comics) < $panels) {
 
     // download it ...
     if (!file_exists($cfn)) {
-        continue;
         touch($cfn) || die();
 
         // open it ...
