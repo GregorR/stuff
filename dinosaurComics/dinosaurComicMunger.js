@@ -6,5 +6,11 @@ function updateImage(p) {
 }
 
 function hideImage(p) {
-    document.getElementById("p" + p).style.visibility = "hidden";
+    var pimg = document.getElementById("p" + p);
+    var curvis = pimg.style.visibility;
+    if (curvis == "visible" || curvis == "show" || curvis == "") {
+        pimg.style.visibility = "hidden";
+    } else if (curvis == "hidden" || curvis == "hide") {
+        pimg.style.visibility = "visible";
+    }
 }
