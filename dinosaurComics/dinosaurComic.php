@@ -45,20 +45,20 @@ $ow = $w;
 $oh = $h;
 $xs = array(
     array(0, 245),
-    array(245, 375),
-    array(375, 735),
+    array(242, 375),
+    array(372, 735),
     array(0, 196),
-    array(196, 494),
-    array(494, 735),
+    array(193, 494),
+    array(491, 735),
     array(0, 735));
 $ys = array(
     array(0, 244),
     array(0, 244),
     array(0, 244),
-    array(244, 487),
-    array(244, 487),
-    array(244, 487),
-    array(487, 500));
+    array(241, 487),
+    array(241, 488),
+    array(241, 487),
+    array(488, 500));
 $adjx = 0;
 $adjy = 0;
 $same = false;
@@ -88,8 +88,6 @@ if (isset($_REQUEST["panels"])) {
         if ($ys[$i][0] < $miny) $miny = $ys[$i][0];
         if ($ys[$i][1] > $maxy) $maxy = $ys[$i][1];
     }
-    if ($minx > 0) $minx -= $border;
-    if ($miny > 0) $miny -= $border;
 
     $adjx = $minx;
     $adjy = $miny;
