@@ -45,23 +45,24 @@ $ow = $w;
 $oh = $h;
 $xs = array(
     array(0, 245),
-    array(245, 375),
-    array(375, 735),
+    array(242, 375),
+    array(372, 735),
     array(0, 196),
-    array(196, 494),
-    array(494, 735),
+    array(193, 494),
+    array(491, 735),
     array(0, 735));
 $ys = array(
     array(0, 244),
     array(0, 244),
     array(0, 244),
-    array(244, 487),
-    array(244, 487),
-    array(244, 487),
+    array(242, 487),
+    array(242, 487),
+    array(242, 487),
     array(487, 500));
 $adjx = 0;
 $adjy = 0;
 $same = false;
+$strip = false;
 
 $includePanels = array(0, 1, 2, 3, 4, 5, 6);
 
@@ -73,23 +74,36 @@ if (isset($_REQUEST["json"])) {
 
 // optionally choose a subset of panels
 if (isset($_REQUEST["panels"])) {
+    if (isset($_REQUEST["strip"])) {
+        // create a strip, rather than a comic with holes
+        $strip = true;
+    }
+
     $rpanels = explode(",", $_REQUEST["panels"]);
     $includePanels = array();
     foreach ($rpanels as $panel) $includePanels[] = intval($panel);
 
     // get the adjustment
-    $maxx = $maxy = 0;
-    $minx = $w;
-    $miny = $h;
-    foreach ($includePanels as $i) {
-        if ($i < 0 || $i >= $panels) die("Invalid panel.");
-        if ($xs[$i][0] < $minx) $minx = $xs[$i][0];
-        if ($xs[$i][1] > $maxx) $maxx = $xs[$i][1];
-        if ($ys[$i][0] < $miny) $miny = $ys[$i][0];
-        if ($ys[$i][1] > $maxy) $maxy = $ys[$i][1];
+    if (!$strip) {
+        $maxx = $maxy = 0;
+        $minx = $w;
+        $miny = $h;
+        foreach ($includePanels as $i) {
+            if ($i < 0 || $i >= $panels) die("Invalid panel.");
+            if ($xs[$i][0] < $minx) $minx = $xs[$i][0];
+            if ($xs[$i][1] > $maxx) $maxx = $xs[$i][1];
+            if ($ys[$i][0] < $miny) $miny = $ys[$i][0];
+            if ($ys[$i][1] > $maxy) $maxy = $ys[$i][1];
+        }
+    } else {
+        $minx = $miny = $maxy = 0;
+        $maxx = $border;
+        foreach ($includePanels as $i) {
+            if ($i < 0 || $i >= $panels) die("Invalid panel.");
+            $maxx += $xs[$i][1] - $xs[$i][0] - $border;
+            if ($ys[$i][1] - $ys[$i][0] > $maxy) $maxy = $ys[$i][1] - $ys[$i][0];
+        }
     }
-    if ($minx > 0) $minx -= $border;
-    if ($miny > 0) $miny -= $border;
 
     $adjx = $minx;
     $adjy = $miny;
@@ -184,19 +198,50 @@ if (isset($_REQUEST["panels"])) {
 $comicstr .= "comics=" . implode(",", $comicstrs);
 $panelstr = implode(",", $comicstrs);
 
+// check if we're resizing
+$resize = 1;
+if (isset($_REQUEST["resize"])) {
+    $resize = floatval($_REQUEST["resize"]);
+    if ($resize <= 0) $resize = 0.1;
+    if ($resize > 2) $resize = 2;
+    $ow *= $resize;
+    $oh *= $resize;
+}
+
 // now start producing our output
 $outimg = imagecreatetruecolor($ow, $oh + imagefontheight(1) + 4);
 
 // read in the comic images
+$curx = 0;
 for ($i = 0; $i < $panels; $i++) {
     // read in this panel
     $inimg = $comics[$i];
     $p = $includePanels[$i];
 
+    // figure out where to put it
+    $fx = $xs[$p][0];
+    $fy = $ys[$p][0];
+    $fw = $xs[$p][1] - $xs[$p][0];
+    $fh = $ys[$p][1] - $ys[$p][0];
+    $tw = floor($fw * $resize);
+    $th = floor($fh * $resize);
+    if (!$strip) {
+        $tx = floor(($fx - $adjx) * $resize);
+        $ty = floor(($fy - $adjy) * $resize);
+    } else {
+        $tx = floor($curx);
+        $ty = 0;
+        $curx += $tw - ($border * $resize);
+    }
+
     // then copy it over
-    imagecopy($outimg, $inimg,
-              $xs[$p][0] - $adjx, $ys[$p][0] - $adjy, $xs[$p][0], $ys[$p][0],
-              ($xs[$p][1] - $xs[$p][0]), ($ys[$p][1] - $ys[$p][0]));
+    if ($resize === 1) {
+        imagecopy($outimg, $inimg,
+                  $tx, $ty, $fx, $fy, $fw, $fh);
+    } else {
+        imagecopyresampled($outimg, $inimg,
+                  $tx, $ty, $fx, $fy, $tw, $th, $fw, $fh);
+    }
     imagedestroy($inimg);
 }
 
