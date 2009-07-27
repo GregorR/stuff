@@ -6,16 +6,19 @@
         <title>Dinosaur Comic Munger!</title>
         <script type="text/javascript" src="dinosaurComicMunger.js"></script>
     </head>
-    <body>
+    <body onload="updateImages();">
+        <div id="permalink"></div>
+        <hr/>
+
         <div>
-            <img src="dinosaurComic.php?panels=0" id="p0" onclick="updateImage(0);" alt="Panel 1"/>
-            <img src="dinosaurComic.php?panels=1" id="p1" onclick="updateImage(1);" alt="Panel 2"/>
-            <img src="dinosaurComic.php?panels=2" id="p2" onclick="updateImage(2);" alt="Panel 3"/>
+            <img src="dinosaurLoader.gif" id="p0" onclick="updateImage(0);" alt="Panel 1"/>
+            <img src="dinosaurLoader.gif" id="p1" onclick="updateImage(1);" alt="Panel 2"/>
+            <img src="dinosaurLoader.gif" id="p2" onclick="updateImage(2);" alt="Panel 3"/>
         </div>
         <div>
-            <img src="dinosaurComic.php?panels=3" id="p3" onclick="updateImage(3);" alt="Panel 4"/>
-            <img src="dinosaurComic.php?panels=4" id="p4" onclick="updateImage(4);" alt="Panel 5"/>
-            <img src="dinosaurComic.php?panels=5" id="p5" onclick="updateImage(5);" alt="Panel 6"/>
+            <img src="dinosaurLoader.gif" id="p3" onclick="updateImage(3);" alt="Panel 4"/>
+            <img src="dinosaurLoader.gif" id="p4" onclick="updateImage(4);" alt="Panel 5"/>
+            <img src="dinosaurLoader.gif" id="p5" onclick="updateImage(5);" alt="Panel 6"/>
         </div>
 
         <p>

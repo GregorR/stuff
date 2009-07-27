@@ -65,6 +65,12 @@ $same = false;
 
 $includePanels = array(0, 1, 2, 3, 4, 5, 6);
 
+// perhaps use JSON output
+$useJSON = false;
+if (isset($_REQUEST["json"])) {
+    $useJSON = true;
+}
+
 // optionally choose a subset of panels
 if (isset($_REQUEST["panels"])) {
     $rpanels = explode(",", $_REQUEST["panels"]);
@@ -176,6 +182,7 @@ if (isset($_REQUEST["panels"])) {
     $comicstr .= "panels=" . $_REQUEST["panels"] . "&";
 }
 $comicstr .= "comics=" . implode(",", $comicstrs);
+$panelstr = implode(",", $comicstrs);
 
 // now start producing our output
 $outimg = imagecreatetruecolor($ow, $oh + imagefontheight(1) + 4);
@@ -200,7 +207,18 @@ imagefilledrectangle($outimg, 0, $oh, imagesx($outimg), imagesy($outimg), $white
 imagestring($outimg, 1, 2, $oh + 2, $comicstr, $grey);
 
 // and write out a png
-header("Content-type: image/png");
-imagepng($outimg);
+if (!$useJSON) {
+    header("Content-type: image/png");
+    imagepng($outimg);
+} else {
+    //header("Content-type: application/json");
+
+    ob_start();
+    imagepng($outimg);
+    $imgpng = ob_get_contents();
+    ob_end_clean();
+
+    print "{\"permalink\": \"" . $comicstr . "\", \"panels\": [" . $panelstr . "], \"comic\": \"" . base64_encode($imgpng) . "\"}";
+}
 imagedestroy($outimg);
 ?>
