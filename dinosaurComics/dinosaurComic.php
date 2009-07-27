@@ -184,6 +184,16 @@ if (isset($_REQUEST["panels"])) {
 $comicstr .= "comics=" . implode(",", $comicstrs);
 $panelstr = implode(",", $comicstrs);
 
+// check if we're resizing
+$resize = false;
+if (isset($_REQUEST["resize"])) {
+    $resize = floatval($_REQUEST["resize"]);
+    if ($resize <= 0) $resize = 0.1;
+    if ($resize > 2) $resize = 2;
+    $ow *= $resize;
+    $oh *= $resize;
+}
+
 // now start producing our output
 $outimg = imagecreatetruecolor($ow, $oh + imagefontheight(1) + 4);
 
@@ -194,9 +204,16 @@ for ($i = 0; $i < $panels; $i++) {
     $p = $includePanels[$i];
 
     // then copy it over
-    imagecopy($outimg, $inimg,
-              $xs[$p][0] - $adjx, $ys[$p][0] - $adjy, $xs[$p][0], $ys[$p][0],
-              ($xs[$p][1] - $xs[$p][0]), ($ys[$p][1] - $ys[$p][0]));
+    if ($resize === false) {
+        imagecopy($outimg, $inimg,
+                  $xs[$p][0] - $adjx, $ys[$p][0] - $adjy, $xs[$p][0], $ys[$p][0],
+                  ($xs[$p][1] - $xs[$p][0]), ($ys[$p][1] - $ys[$p][0]));
+    } else {
+        imagecopyresampled($outimg, $inimg,
+                  floor(($xs[$p][0] - $adjx) * $resize), floor(($ys[$p][0] - $adjy) * $resize), $xs[$p][0], $ys[$p][0],
+                  floor(($xs[$p][1] - $xs[$p][0]) * $resize), floor(($ys[$p][1] - $ys[$p][0]) * $resize),
+                  ($xs[$p][1] - $xs[$p][0]), ($ys[$p][1] - $ys[$p][0]));
+    }
     imagedestroy($inimg);
 }
 
