@@ -21,7 +21,22 @@
  * THE SOFTWARE.
  */
 
-$latest = 1538;
+// figure out the latest Dinosaur Comic
+$dlf = "cache/dinosaur-latest";
+if (!file_exists($dlf) || time() - filemtime($dlf) > (60 * 60 * 24)) {
+    // get the latest comic
+    $fh = fopen("http://www.qwantz.com/index.php", "r");
+    if ($fh === false) die("Failed to connect to qwantz.com!");
+
+    $page = str_replace("\n", " ", stream_get_contents($fh));
+    fclose($fh);
+
+    // now extract the comic
+    $num = preg_replace("/.*comic2-([0-9]*)\\.png.*/", "\\1", $page);
+    file_put_contents($dlf, $num);
+}
+
+$latest = intval(file_get_contents($dlf));
 $panels = 7; // 6 plus the footer
 $w = 735;
 $h = 500;
