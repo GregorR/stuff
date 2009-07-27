@@ -196,6 +196,9 @@ if (isset($_REQUEST["panels"])) {
     $comicstr .= "panels=" . $_REQUEST["panels"] . "&";
 }
 $comicstr .= "comics=" . implode(",", $comicstrs);
+if ($strip) {
+    $comicstr .= "&strip";
+}
 $panelstr = implode(",", $comicstrs);
 
 // check if we're resizing
