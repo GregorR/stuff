@@ -95,12 +95,18 @@ if (isset($_REQUEST["same"])) {
 $comics = array();
 $comicstrs = array();
 while (count($comics) < $panels) {
+    $comic = 0;
     if (count($incomics) > 0) {
         $comic = array_shift($incomics);
     } else if ($same && count($comics) > 0) {
         $comic = $comicstrs[0];
-    } else {
+    }
+    
+    if ($comic == 0) {
         $comic = mt_rand(1, $latest);
+    }
+    if (gettype($comic) == "integer") {
+        if ($comic < 0 || $comic > $latest) die("Invalid comic $comic.");
         if ($comic < 10) $comic = "0" . $comic; else $comic = "" . $comic;
     }
 
@@ -110,7 +116,6 @@ while (count($comics) < $panels) {
 
     // download it ...
     if (!file_exists($cfn)) {
-        continue;
         touch($cfn) || die();
 
         // open it ...
