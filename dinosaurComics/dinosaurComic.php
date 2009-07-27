@@ -46,6 +46,7 @@ $ys = array(
     array(487, 500));
 $adjx = 0;
 $adjy = 0;
+$same = false;
 
 $includePanels = array(0, 1, 2, 3, 4, 5, 6);
 
@@ -85,12 +86,19 @@ if (isset($_REQUEST["comics"])) {
     foreach ($incomicsprime as $ic) $incomics[] = intval($ic);
 }
 
+// or be less random
+if (isset($_REQUEST["same"])) {
+    $same = true;
+}
+
 // pick random comics
 $comics = array();
 $comicstrs = array();
 while (count($comics) < $panels) {
     if (count($incomics) > 0) {
         $comic = array_shift($incomics);
+    } else if ($same && count($comics) > 0) {
+        $comic = $comicstrs[0];
     } else {
         $comic = mt_rand(1, $latest);
         if ($comic < 10) $comic = "0" . $comic; else $comic = "" . $comic;
@@ -102,6 +110,7 @@ while (count($comics) < $panels) {
 
     // download it ...
     if (!file_exists($cfn)) {
+        continue;
         touch($cfn) || die();
 
         // open it ...
