@@ -44,8 +44,8 @@ $border = 3;
 $ow = $w;
 $oh = $h;
 $xs = array(
-    array(0, 246),
-    array(246, 375),
+    array(0, 245),
+    array(245, 375),
     array(375, 735),
     array(0, 196),
     array(196, 494),
