@@ -63,13 +63,27 @@ function updateDisplay() {
 
     // numbers
     url += "&comics=";
+    var nums = "";
     for (i = 0; i < 6; i++) {
         if (panelVisible[i]) {
             url += panelComics[i] + ",";
+            nums += panelComics[i] + ",";
         }
     }
     url = url.slice(0, -1).replace("&", "&amp;");
+    nums = nums.slice(0, -1);
+
+    // for TRILC use
+    var trilc = "";
+    if (panelVisible[0]) trilc += panelComics[0]; else trilc += "0";
+    trilc += ",";
+    if (panelVisible[1]) trilc += panelComics[1]; else trilc += "0";
+    trilc += ",";
+    if (panelVisible[5]) trilc += panelComics[5]; else trilc += "0";
 
     document.getElementById("permalink").innerHTML =
-        "<a href=\"" + url + "\">" + url + "</a>";
+        "<a href=\"" + url + "\">Download this comic</a> " +
+        "&mdash; <a href=\"" + url + "&amp;strip\">strip format</a>" +
+        "&mdash; " + num +
+        "&mdash; " + trilc;
 }
