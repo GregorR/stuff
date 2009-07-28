@@ -82,8 +82,8 @@ function updateDisplay() {
     if (panelVisible[5]) trilc += panelComics[5]; else trilc += "0";
 
     document.getElementById("permalink").innerHTML =
-        "<a href=\"" + url + "\">Download this comic</a> " +
-        "&mdash; <a href=\"" + url + "&amp;strip\">strip format</a>" +
-        "&mdash; " + num +
-        "&mdash; " + trilc;
+        "<a href=\"" + url + "\">Download this comic</a>" +
+        " - <a href=\"" + url + "&amp;strip\">strip format</a>" +
+        " - " + nums +
+        " - " + trilc;
 }
