@@ -74,7 +74,7 @@ do
        $PLAYOPTS \
        $IN \
        < /dev/null &
-    faac $OUT_NSP.wav.$i -o $OUT_NSP.$i.aac < /dev/null &
+    faac $OUT_NSP.wav.$i -o $OUT_NSP.$i.m4a < /dev/null &
 
     # And a stereo channel if necessary
     if [ "$NCH" = "6" -a "$CONVERT_SURROUND" = "yes" ]
@@ -86,7 +86,7 @@ do
             $PLAYOPTS \
             $IN \
             < /dev/null &
-        faac $OUT_NSP.wav.stereo.$i -o $OUT_NSP.$i.stereo.aac < /dev/null &
+        faac $OUT_NSP.wav.stereo.$i -o $OUT_NSP.$i.stereo.m4a < /dev/null &
     fi
 done
 
@@ -97,13 +97,13 @@ do
     ALANG=`aid_lang "$IDENT" $i`
     if [ "$NCH" = "2" ]
     then
-        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.aac"
-        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.aac#audio:lang=$ALANG"
+        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.m4a"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.m4a#audio:lang=$ALANG"
 
     elif [ "$CONVERT_SURROUND" = "yes" ]
     then
-        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.stereo.aac"
-        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.stereo.aac#audio:lang=$ALANG"
+        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.stereo.m4a"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.stereo.m4a#audio:lang=$ALANG"
     fi
 done
 for i in $AUDIO_TRACKS
@@ -112,8 +112,8 @@ do
     ALANG=`aid_lang "$IDENT" $i`
     if [ "$NCH" != "2" ]
     then
-        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.aac"
-        AUDIO_MP4="$AUDIO_MP4 $OUT_NSP.$i.aac#audio:lang=$ALANG"
+        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.m4a"
+        AUDIO_MP4="$AUDIO_MP4 $OUT_NSP.$i.m4a#audio:lang=$ALANG"
     fi
 done
 
@@ -177,15 +177,16 @@ mkvmerge \
     -A "$OUT".vid.avi $AUDIO_MKV $SUB_MKV \
     -o "$OUT".mkv
 ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
+rm -f "$OUT".mp4
 MP4Box \
-    -add "$OUT.vid.h264#video" $AUDIO_MP4 $SUB_MP4 \
-    -fps $FPS \
+    -inter 500 -isma \
+    -add "$OUT.vid.h264#video" -fps $FPS $AUDIO_MP4 $SUB_MP4 \
     "$OUT".mp4
 
 # Clean up
 for i in $AUDIO_TRACKS
 do
-    rm -f $OUT_NSP.wav.$i $OUT_NSP.$i.aac $OUT_NSP.wav.stereo.$i $OUT_NSP.$i.stereo.aac
+    rm -f $OUT_NSP.wav.$i $OUT_NSP.$i.m4a $OUT_NSP.wav.stereo.$i $OUT_NSP.$i.stereo.m4a
 done
 for i in $SUB_TRACKS
 do

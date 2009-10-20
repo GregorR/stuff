@@ -63,6 +63,7 @@ $adjx = 0;
 $adjy = 0;
 $same = false;
 $strip = false;
+$includelink = true;
 
 $includePanels = array(0, 1, 2, 3, 4, 5, 6);
 
@@ -124,6 +125,11 @@ if (isset($_REQUEST["comics"])) {
 // or be less random
 if (isset($_REQUEST["same"])) {
     $same = true;
+}
+
+// maybe don't include a link
+if (isset($_REQUEST["nolink"])) {
+    $includelink = false;
 }
 
 // pick random comics
@@ -212,7 +218,7 @@ if (isset($_REQUEST["resize"])) {
 }
 
 // now start producing our output
-$outimg = imagecreatetruecolor($ow, $oh + imagefontheight(1) + 4);
+$outimg = imagecreatetruecolor($ow, $includelink ? ($oh + imagefontheight(1) + 4) : $oh);
 
 // read in the comic images
 $curx = 0;
@@ -249,18 +255,18 @@ for ($i = 0; $i < $panels; $i++) {
 }
 
 // write the comicstr
-$white = imagecolorallocate($outimg, 255, 255, 255);
-$grey = imagecolorallocate($outimg, 128, 128, 128);
-imagefilledrectangle($outimg, 0, $oh, imagesx($outimg), imagesy($outimg), $white);
-imagestring($outimg, 1, 2, $oh + 2, $comicstr, $grey);
+if ($includelink) {
+    $white = imagecolorallocate($outimg, 255, 255, 255);
+    $grey = imagecolorallocate($outimg, 128, 128, 128);
+    imagefilledrectangle($outimg, 0, $oh, imagesx($outimg), imagesy($outimg), $white);
+    imagestring($outimg, 1, 2, $oh + 2, $comicstr, $grey);
+}
 
 // and write out a png
 if (!$useJSON) {
     header("Content-type: image/png");
     imagepng($outimg);
 } else {
-    //header("Content-type: application/json");
-
     ob_start();
     imagepng($outimg);
     $imgpng = ob_get_contents();
