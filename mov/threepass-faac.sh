@@ -92,12 +92,12 @@ do
     if [ "$NCH" = "2" ]
     then
         AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.aac"
-        AUDIO_MP4="$AUDIO_MP4 $OUT_NSP.$i.aac#audio:lang=$ALANG"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.aac#audio:lang=$ALANG"
 
     elif [ "$CONVERT_SURROUND" = "yes" ]
     then
         AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.stereo.aac"
-        AUDIO_MP4="$AUDIO_MP4 $OUT_NSP.$i.aac#audio:lang=$ALANG"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.stereo.aac#audio:lang=$ALANG"
     fi
 done
 for i in $AUDIO_TRACKS
@@ -170,7 +170,7 @@ mkvmerge \
     -o "$OUT".mkv
 ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
 MP4Box \
-    "$OUT.vid.h264#video" $AUDIO_MP4 \
+    -add "$OUT.vid.h264#video" $AUDIO_MP4 \
     "$OUT".mp4
 
 # Clean up
