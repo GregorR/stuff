@@ -30,6 +30,12 @@ aid_lang() {
     if [ "$TEST_LANG" = "" ] ; then echo "und" ; else echo "$TEST_LANG" ; fi
 }
 
+# Get the fps
+fps() {
+    midentify $1 | grep '^ID_VIDEO_FPS=' | sed 's/ID_VIDEO_FPS=//'
+}
+FPS="`fps $IDENT`"
+
 
 # Get all the audio tracks
 if [ ! "$AUDIO_TRACKS" ]
@@ -118,7 +124,8 @@ done
 
 # Now pull out any subtitles
 SUB_TRACKS="`midentify $IDENT | grep '^ID_SUBTITLE_ID=' | sed 's/ID_SUBTITLE_ID=//'`"
-SUB_IDXS=""
+SUB_MKV=""
+SUB_MP4=""
 for i in $SUB_TRACKS
 do
     mencoder \
@@ -126,7 +133,8 @@ do
         -ovc copy -nosound \
         -sid $i -vobsubout $OUT_NSP.$i \
         -o /dev/null < /dev/null &
-    SUB_IDXS="$SUB_IDXS $OUT_NSP.$i.idx"
+    SUB_MKV="$SUB_MKV $OUT_NSP.$i.idx"
+    SUB_MP4="$SUB_MP4 -add $OUT_NSP.$i.idx"
 done
 
 
@@ -166,11 +174,12 @@ wait
 
 # Mux it
 mkvmerge \
-    -A "$OUT".vid.avi $AUDIO_MKV $SUB_IDXS \
+    -A "$OUT".vid.avi $AUDIO_MKV $SUB_MKV \
     -o "$OUT".mkv
 ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
 MP4Box \
-    -add "$OUT.vid.h264#video" $AUDIO_MP4 \
+    -add "$OUT.vid.h264#video" $AUDIO_MP4 $SUB_MP4 \
+    -fps $FPS \
     "$OUT".mp4
 
 # Clean up
