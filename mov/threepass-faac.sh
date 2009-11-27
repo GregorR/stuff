@@ -123,7 +123,7 @@ done
 ###############################################################################
 
 # Now pull out any subtitles
-SUB_TRACKS="`midentify $IDENT | grep '^ID_SUBTITLE_ID=' | sed 's/ID_SUBTITLE_ID=//'`"
+SUB_TRACKS="`midentify $IDENT | grep '^ID_SUBTITLE_ID=' | sed 's/ID_SUBTITLE_ID=//' | sort | uniq`"
 SUB_MKV=""
 SUB_MP4=""
 for i in $SUB_TRACKS

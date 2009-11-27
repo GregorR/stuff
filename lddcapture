@@ -1,0 +1,47 @@
+#!/bin/bash
+# lddcapture: A simple script to turn a binary into an appdir
+die() {
+    echo "$1" >&2
+    exit 1
+}
+
+if [ ! "$2" ]
+then
+    echo 'Use: lddcapture <binary> <appdir>'
+    exit 1
+fi
+
+BIN="$1"
+BINNAME=`basename "$BIN"`
+APPDIR="$2"
+
+mkdir "$APPDIR" || die "Failed to mkdir $APPDIR"
+mkdir -p "$APPDIR/inst/bin"
+mkdir -p "$APPDIR/inst/lib"
+
+# Copy in the libraries
+for i in `ldd "$BIN" | sed 's/\t/ /g' | cut -d' ' -f 4`
+do
+    cp -vp "$i" "$APPDIR/inst/lib"
+done
+
+# And the binary
+cp -vp "$BIN" "$APPDIR/inst/bin"
+
+# Now make the script to run it
+echo '#!/bin/sh
+APPDIR="`dirname $0`"
+if [ "$LD_LIBRARY_PATH" ]
+then
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$APPDIR/inst/lib"
+else
+    LD_LIBRARY_PATH="$APPDIR/inst/lib"
+fi
+export LD_LIBRARY_PATH
+exec "`dirname $0`/inst/bin/'$BINNAME'" "$@"' > "$APPDIR/$BINNAME"
+chmod 0755 "$APPDIR/$BINNAME"
+
+# Remove the stupid stuff
+rm -f "$APPDIR"/inst/lib/libc.* "$APPDIR"/inst/lib/libm.* "$APPDIR"/inst/lib/libdl.*
+
+LD_LIBRARY_PATH="$APPDIR/inst/lib" ldd "$APPDIR/inst/bin/$BINNAME"
