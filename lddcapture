@@ -1,5 +1,20 @@
 #!/bin/bash
 # lddcapture: A simple script to turn a binary into an appdir
+
+# The important parts of libc that will need to be removed from the appdir
+LIBC="
+libanl.                                                                                                     
+libc.                                                                                                       
+libcidn.
+libcrypt.
+libdl.
+libm.
+libpthread.
+libresolv.
+librt.
+libutil.
+"
+
 die() {
     echo "$1" >&2
     exit 1
@@ -42,6 +57,9 @@ exec "`dirname $0`/inst/bin/'$BINNAME'" "$@"' > "$APPDIR/$BINNAME"
 chmod 0755 "$APPDIR/$BINNAME"
 
 # Remove the stupid stuff
-rm -f "$APPDIR"/inst/lib/libc.* "$APPDIR"/inst/lib/libm.* "$APPDIR"/inst/lib/libdl.*
+for lib in $LIBC
+do
+    rm -vf "$APPDIR"/inst/lib/$lib*
+done
 
 LD_LIBRARY_PATH="$APPDIR/inst/lib" ldd "$APPDIR/inst/bin/$BINNAME"

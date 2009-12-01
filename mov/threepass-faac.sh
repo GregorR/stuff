@@ -30,12 +30,6 @@ aid_lang() {
     if [ "$TEST_LANG" = "" ] ; then echo "und" ; else echo "$TEST_LANG" ; fi
 }
 
-# Get the fps
-fps() {
-    midentify $1 | grep '^ID_VIDEO_FPS=' | sed 's/ID_VIDEO_FPS=//'
-}
-FPS="`fps $IDENT`"
-
 
 # Get all the audio tracks
 if [ ! "$AUDIO_TRACKS" ]
@@ -113,7 +107,7 @@ do
     if [ "$NCH" != "2" ]
     then
         AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.m4a"
-        AUDIO_MP4="$AUDIO_MP4 $OUT_NSP.$i.m4a#audio:lang=$ALANG"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.m4a#audio:lang=$ALANG"
     fi
 done
 
@@ -134,13 +128,19 @@ do
         -sid $i -vobsubout $OUT_NSP.$i \
         -o /dev/null < /dev/null &
     SUB_MKV="$SUB_MKV $OUT_NSP.$i.idx"
-    SUB_MP4="$SUB_MP4 -add $OUT_NSP.$i.idx"
+    #SUB_MP4="$SUB_MP4 -add $OUT_NSP.$i.idx" FIXME: seems broken with MP4Box
 done
 
 
 ###############################################################################
 # VIDEO
 ###############################################################################
+
+# Get the fps
+fps() {
+    midentify "$@" | grep '^ID_VIDEO_FPS=' | sed 's/ID_VIDEO_FPS=//'
+}
+FPS="`fps $IDENT`"
 
 # Pass 1
 mencoder \
