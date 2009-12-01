@@ -22,13 +22,14 @@ die() {
 
 if [ ! "$2" ]
 then
-    echo 'Use: lddcapture <binary> <appdir>'
+    echo 'Use: lddcapture <appdir> <binary> [other libraries]'
     exit 1
 fi
 
-BIN="$1"
+APPDIR="$1"
+BIN="$2"
 BINNAME=`basename "$BIN"`
-APPDIR="$2"
+shift; shift
 
 mkdir "$APPDIR" || die "Failed to mkdir $APPDIR"
 mkdir -p "$APPDIR/inst/bin"
@@ -37,14 +38,25 @@ mkdir -p "$APPDIR/inst/lib"
 # Copy in the libraries
 for i in `ldd "$BIN" | sed 's/\t/ /g' | cut -d' ' -f 4`
 do
-    cp -vp "$i" "$APPDIR/inst/lib"
+    cp -vfp "$i" "$APPDIR/inst/lib"
+done
+for lib in "$@"
+do
+    for i in `ldd "$lib" | sed 's/\t/ /g' | cut -d' ' -f 4`
+    do
+        cp -vfp "$i" "$APPDIR"/inst/lib
+    done
+    cp -vfp "$lib" "$APPDIR/inst/lib"
 done
 
 # And the binary
-cp -vp "$BIN" "$APPDIR/inst/bin"
+cp -vfp "$BIN" "$APPDIR/inst/bin"
 
 # Now make the script to run it
 echo '#!/bin/sh
+# This appdir created by lddcapture.
+# http://codu.org/projects/stuff/hg/index.cgi/raw-file/tip/lddcapture
+
 APPDIR="`dirname $0`"
 if [ "$LD_LIBRARY_PATH" ]
 then
@@ -53,7 +65,7 @@ else
     LD_LIBRARY_PATH="$APPDIR/inst/lib"
 fi
 export LD_LIBRARY_PATH
-exec "`dirname $0`/inst/bin/'$BINNAME'" "$@"' > "$APPDIR/$BINNAME"
+exec "$APPDIR/inst/bin/'$BINNAME'" "$@"' > "$APPDIR/$BINNAME"
 chmod 0755 "$APPDIR/$BINNAME"
 
 # Remove the stupid stuff
