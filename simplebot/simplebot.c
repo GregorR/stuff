@@ -32,6 +32,9 @@ void ircRead(int, short, void *);
 void handlePrivmsg(int argc, char **args);
 void sockRead(int, short, void *);
 void ping(int, short, void *);
+void logPrint(const char *format, ...);
+
+FILE *logfile;
 
 int main(int argc, char **argv)
 {
@@ -40,8 +43,8 @@ int main(int argc, char **argv)
     struct event ircEv, sockEv, ptimer;
     struct timeval tv;
 
-    if (argc != 3) {
-        fprintf(stderr, "Use: simplebot <user> <channel>\n");
+    if (argc != 4) {
+        fprintf(stderr, "Use: simplebot <user> <channel> <log file>\n");
         return 1;
     }
 
@@ -49,10 +52,10 @@ int main(int argc, char **argv)
     INIT_BUFFER(ircBuf);
     INIT_BUFFER(sockBuf);
 
-    printf("USER %s localhost localhost :SimpleBot\r\n"
-           "NICK :%s\r\n",
-           argv[1], argv[1]);
-    fflush(stdout);
+    SF(logfile, fopen, NULL, (argv[3], "a"));
+
+    logPrint("USER %s localhost localhost :SimpleBot\r\n", argv[1]);
+    logPrint("NICK :%s\r\n", argv[1]);
 
     /* now open the simpleing socket */
     SF(sock, socket, -1, (AF_UNIX, SOCK_DGRAM, 0));
@@ -100,13 +103,14 @@ void ircRead(int fd, short i0, void *i1)
     /* look for \r\n */
     while ((endl = strstr(ircBuf.buf, "\r\n"))) {
         *endl = '\0';
+        fprintf(logfile, "< %s\r\n", ircBuf.buf);
+        fflush(logfile);
 
         if (ircBuf.buf[0] == ':') {
             /* perhaps this is time to join the channel */
             if (!joined) {
                 joined = 1;
-                printf("JOIN #%s\r\n", channel);
-                fflush(stdout);
+                logPrint("JOIN #%s\r\n", channel);
             }
 
             /* separate out the pieces */
@@ -129,8 +133,7 @@ void ircRead(int fd, short i0, void *i1)
             if (argc >= 2) {
                 if (!strcmp(args[1], "PING")) {
                     /* pong! */
-                    printf("PONG :localhost\r\n");
-                    fflush(stdout);
+                    logPrint("PONG :localhost\r\n");
 
                 } else if (!strcmp(args[1], "PRIVMSG")) {
                     handlePrivmsg(argc, args);
@@ -218,8 +221,7 @@ void sockRead(int fd, short i0, void *i1)
         *endl = '\0';
 
         /* print it out */
-        printf("PRIVMSG #%s :%.*s\r\n", channel, MAX_MSG_LEN, sockBuf.buf);
-        fflush(stdout);
+        logPrint("PRIVMSG #%s :%.*s\r\n", channel, MAX_MSG_LEN, sockBuf.buf);
 
         /* now skip this line */
         skip = endl + 1 - sockBuf.buf;
@@ -230,6 +232,22 @@ void sockRead(int fd, short i0, void *i1)
 
 void ping(int i0, short i1, void *i2)
 {
-    printf("PING :localhost\r\n");
+    logPrint("PING :localhost\r\n");
+}
+
+void logPrint(const char *format, ...)
+{
+#define LOG_BUF_SZ 1024
+    char buf[LOG_BUF_SZ];
+
+    va_list ap;
+    va_start(ap, format);
+
+    vsnprintf(buf, LOG_BUF_SZ, format, ap);
+
+    printf("%s", buf);
     fflush(stdout);
+
+    fprintf(logfile, "> %s", buf);
+    fflush(logfile);
 }
