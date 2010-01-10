@@ -31,6 +31,9 @@ void ircRead(int, short, void *);
 void handleMessage(int argc, char **args);
 void sockRead(int, short, void *);
 void ping(int, short, void *);
+void logPrint(const char *format, ...);
+
+FILE *logfile;
 
 int main(int argc, char **argv)
 {
@@ -39,8 +42,8 @@ int main(int argc, char **argv)
     struct event ircEv, sockEv, ptimer;
     struct timeval tv;
 
-    if (argc != 3) {
-        fprintf(stderr, "Use: multibot <user> <channel>\n");
+    if (argc != 4) {
+        fprintf(stderr, "Use: multibot <user> <channel> <log>\n");
         return 1;
     }
 
@@ -49,10 +52,10 @@ int main(int argc, char **argv)
     INIT_BUFFER(ircBuf);
     INIT_BUFFER(sockBuf);
 
-    printf("USER %s localhost localhost :MultiBot\r\n"
-           "NICK :%s\r\n",
-           nick, nick);
-    fflush(stdout);
+    SF(logfile, fopen, NULL, (argv[3], "a"));
+
+    logPrint("USER %s localhost localhost :MultiBot\r\n", nick);
+    logPrint("NICK :%s\r\n", nick);
 
     /* name the sock */
     sockName = malloc(sizeof(SOCK_NAME) + strlen(nick));
@@ -104,13 +107,14 @@ void ircRead(int fd, short i0, void *i1)
     /* look for \r\n */
     while ((endl = strstr(ircBuf.buf, "\r\n"))) {
         *endl = '\0';
+        fprintf(logfile, "< %s\r\n", ircBuf.buf);
+        fflush(logfile);
 
         if (ircBuf.buf[0] == ':') {
             /* perhaps this is time to join the channel */
             if (!joined) {
                 joined = 1;
-                printf("JOIN #%s\r\n", channel);
-                fflush(stdout);
+                logPrint("JOIN #%s\r\n", channel);
             }
 
             /* separate out the pieces */
@@ -133,8 +137,7 @@ void ircRead(int fd, short i0, void *i1)
             if (argc >= 2) {
                 if (!strcmp(args[1], "PING")) {
                     /* pong! */
-                    printf("PONG :localhost\r\n");
-                    fflush(stdout);
+                    logPrint("PONG :localhost\r\n");
 
                 } else {
                     handleMessage(argc, args);
@@ -144,8 +147,7 @@ void ircRead(int fd, short i0, void *i1)
 
         } else if (!strncmp(ircBuf.buf, "PING", 4)) {
             /* pong! */
-            printf("PONG :localhost\r\n");
-            fflush(stdout);
+            logPrint("PONG :localhost\r\n");
 
         }
 
@@ -270,8 +272,7 @@ void sockRead(int fd, short i0, void *i1)
         while ((cr = strchr(sockBuf.buf, '\r'))) *cr = '\0';
 
         /* print it out */
-        printf("%.*s\r\n", MAX_MSG_LEN, sockBuf.buf);
-        fflush(stdout);
+        logPrint("%.*s\r\n", MAX_MSG_LEN, sockBuf.buf);
 
         /* now skip this line */
         skip = endl + 1 - sockBuf.buf;
@@ -282,6 +283,22 @@ void sockRead(int fd, short i0, void *i1)
 
 void ping(int i0, short i1, void *i2)
 {
-    printf("PING :localhost\r\n");
+    logPrint("PING :localhost\r\n");
+}
+
+void logPrint(const char *format, ...)
+{
+#define LOG_BUF_SZ 1024
+    char buf[LOG_BUF_SZ];
+
+    va_list ap;
+    va_start(ap, format);
+
+    vsnprintf(buf, LOG_BUF_SZ, format, ap);
+
+    printf("%s", buf);
     fflush(stdout);
+
+    fprintf(logfile, "> %s", buf);
+    fflush(logfile);
 }
