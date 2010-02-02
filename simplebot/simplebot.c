@@ -142,6 +142,12 @@ void ircRead(int fd, short i0, void *i1)
             }
         }
 
+        /* a global ping? */
+        if (!strncmp(ircBuf.buf, "PING", 4)) {
+            /* pong! */
+            logPrint("PONG :localhost\r\n");
+        }
+
         /* now skip this line */
         skip = endl + 2 - ircBuf.buf;
         ircBuf.bufused -= skip;
