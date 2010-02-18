@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Gregor Richards
+ * Copyright (C) 2009, 2010 Gregor Richards
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,18 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
+#ifdef BUFFER_GC
+#define _BUFFER_MALLOC GC_malloc
+#define _BUFFER_REALLOC GC_realloc
+#define _BUFFER_FREE GC_free
+
+#else
+#define _BUFFER_MALLOC malloc
+#define _BUFFER_REALLOC realloc
+#define _BUFFER_FREE free
+
+#endif
+
 #include "helpers.h"
 
 #define BUFFER_DEFAULT_SIZE 1024
@@ -42,13 +54,13 @@ BUFFER(int, int);
 { \
     (buffer).bufsz = BUFFER_DEFAULT_SIZE; \
     (buffer).bufused = 0; \
-    SF((buffer).buf, malloc, NULL, (BUFFER_DEFAULT_SIZE * sizeof(*(buffer).buf))); \
+    SF((buffer).buf, _BUFFER_MALLOC, NULL, (BUFFER_DEFAULT_SIZE * sizeof(*(buffer).buf))); \
 }
 
 /* free a buffer */
 #define FREE_BUFFER(buffer) \
 { \
-    if ((buffer).buf) free((buffer).buf); \
+    if ((buffer).buf) _BUFFER_FREE((buffer).buf); \
     (buffer).buf = NULL; \
 }
 
@@ -65,7 +77,7 @@ BUFFER(int, int);
 #define EXPAND_BUFFER(buffer) \
 { \
     (buffer).bufsz *= 2; \
-    SF((buffer).buf, realloc, NULL, ((buffer).buf, (buffer).bufsz * sizeof(*(buffer).buf))); \
+    SF((buffer).buf, _BUFFER_REALLOC, NULL, ((buffer).buf, (buffer).bufsz * sizeof(*(buffer).buf))); \
 }
 
 /* write a string to a buffer */
