@@ -24,14 +24,14 @@
 #define BUFFER_H
 
 #ifdef BUFFER_GC
-#define BUFFER_MALLOC GC_MALLOC
-#define BUFFER_REALLOC GC_REALLOC
-#define BUFFER_FREE(x) GC_FREE
+#define _BUFFER_MALLOC GC_malloc
+#define _BUFFER_REALLOC GC_realloc
+#define _BUFFER_FREE GC_free
 
 #else
-#define BUFFER_MALLOC malloc
-#define BUFFER_REALLOC realloc
-#define BUFFER_FREE free
+#define _BUFFER_MALLOC malloc
+#define _BUFFER_REALLOC realloc
+#define _BUFFER_FREE free
 
 #endif
 
@@ -54,13 +54,13 @@ BUFFER(int, int);
 { \
     (buffer).bufsz = BUFFER_DEFAULT_SIZE; \
     (buffer).bufused = 0; \
-    SF((buffer).buf, BUFFER_MALLOC, NULL, (BUFFER_DEFAULT_SIZE * sizeof(*(buffer).buf))); \
+    SF((buffer).buf, _BUFFER_MALLOC, NULL, (BUFFER_DEFAULT_SIZE * sizeof(*(buffer).buf))); \
 }
 
 /* free a buffer */
 #define FREE_BUFFER(buffer) \
 { \
-    if ((buffer).buf) BUFFER_FREE((buffer).buf); \
+    if ((buffer).buf) _BUFFER_FREE((buffer).buf); \
     (buffer).buf = NULL; \
 }
 
@@ -77,7 +77,7 @@ BUFFER(int, int);
 #define EXPAND_BUFFER(buffer) \
 { \
     (buffer).bufsz *= 2; \
-    SF((buffer).buf, BUFFER_REALLOC, NULL, ((buffer).buf, (buffer).bufsz * sizeof(*(buffer).buf))); \
+    SF((buffer).buf, _BUFFER_REALLOC, NULL, ((buffer).buf, (buffer).bufsz * sizeof(*(buffer).buf))); \
 }
 
 /* write a string to a buffer */
