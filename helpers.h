@@ -23,14 +23,20 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
+/* SFC: safely use functions, given provided code in case of an error */
+#define SFC(into, func, bad, args) \
+    (into) = func args; \
+    if ((into) == (bad))
+
+/* SFE: SFC with perror */
+#define SFE(into, func, bad, error, args) \
+    SFC(into, func, bad, args) { \
+        perror(error); \
+        exit(1); \
+    }
+
 /* SF: safely use functions that fail with errno without pulling your hair out */
 #define SF(into, func, bad, args) \
-{ \
-    (into) = func args; \
-    if ((into) == (bad)) { \
-        perror(#func); \
-        exit(1); \
-    } \
-}
+    SFE(into, func, bad, #func, args);
 
 #endif

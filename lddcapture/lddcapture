@@ -72,6 +72,9 @@ done
 # And the binary
 cp -vfp "$BIN" "$APPDIR/inst/bin"
 
+# Strip everything
+find "$APPDIR" -type f | xargs strip --strip-unneeded
+
 # Now make the script to run it
 echo '#!/bin/sh
 # This appdir created by lddcapture.

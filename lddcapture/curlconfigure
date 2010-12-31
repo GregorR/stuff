@@ -1,0 +1,12 @@
+#!/bin/bash
+./configure --disable-debug --enable-optimize --disable-warnings --enable-http \
+            --enable-ftp --enable-file --disable-ldap --disable-ldaps \
+            --enable-proxy --disable-dict --disable-telnet --disable-tftp \
+            --disable-manual --enable-ipv6 --disable-ares --disable-sspi \
+            --disable-crypto-auth --disable-cookies --without-krb4 \
+            --without-spnego --without-gssapi \
+            --without-ssl --with-zlib --without-gnutls --without-nss \
+            --without-ca-bundle --without-ca-path --without-libssh2 \
+            --without-libidn \
+            --enable-static --disable-shared \
+            --prefix=/usr
