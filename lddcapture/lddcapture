@@ -40,18 +40,20 @@ die() {
     exit 1
 }
 
-if [ ! "$2" ]
+if [ ! "$3" ]
 then
-    echo 'Use: lddcapture <appdir> <binary> [other libraries]'
+    echo 'Use: lddcapture <appdir> <src dir> <binary> [other libraries]'
     exit 1
 fi
 
 APPDIR="$1"
-BIN="$2"
+SRCDIR="$2"
+BIN="$3"
 BINNAME=`basename "$BIN"`
-shift; shift
+shift; shift; shift
 
 mkdir "$APPDIR" || die "Failed to mkdir $APPDIR"
+mkdir -p "$SRCDIR" || die "Failed to mkdir $SRCDIR"
 mkdir -p "$APPDIR/inst/bin"
 mkdir -p "$APPDIR/inst/lib"
 
@@ -95,6 +97,17 @@ chmod 0755 "$APPDIR/$BINNAME"
 for lib in $LIBC
 do
     rm -vf "$APPDIR"/inst/lib/$lib*
+done
+
+# Get sources
+for lib in "$APPDIR"/inst/lib/*
+do
+    libb=`basename "$lib"`
+    echo "Getting source for $libb"
+    pkg=`dpkg-query -S "$libb" | grep -vE '^(ia32-libs|lib32|gcc|libgcc|libstdc)' | head -n 1 | sed 's/:.*//'`
+    pushd "$SRCDIR"
+    apt-get -d source "$pkg"
+    popd
 done
 
 LD_LIBRARY_PATH="$APPDIR/inst/lib" ldd "$APPDIR/inst/bin/$BINNAME"
