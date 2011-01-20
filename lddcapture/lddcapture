@@ -40,17 +40,46 @@ die() {
     exit 1
 }
 
-if [ ! "$3" ]
+if [ ! "$2" ]
 then
-    echo 'Use: lddcapture <appdir> <src dir> <binary> [other libraries]'
+    echo 'Use: lddcapture <appdir> <binary> [options, other libraries]'
+    echo 'Options:'
+    echo '  -s <srcdir>: Download sources for dependencies to <srcdir> (Debian only)'
+    echo '  -x <exclusion file>: Exclude every library named (by prefix) in the exclusion file.'
     exit 1
 fi
 
 APPDIR="$1"
-SRCDIR="$2"
-BIN="$3"
+BIN="$2"
 BINNAME=`basename "$BIN"`
-shift; shift; shift
+shift; shift
+
+OTHERLIBS=""
+SRCDIR=""
+EXCLUSION=""
+
+while [ "$1" ]
+do
+    i="$1"
+    shift
+    if expr "$i" : "-" > /dev/null 2> /dev/null
+    then
+        if [ "$i" = "-s" ]
+        then
+            SRCDIR="$1"
+            shift
+        elif [ "$i" = "-x" ]
+        then
+            EXCLUSION="$EXCLUSION `cat $1`"
+            shift
+        else
+            echo 'Unrecognized option '"$i"
+            exit 1
+        fi
+    else
+        OTHERLIBS="$OTHERLIBS $i"
+    fi
+done
 
 mkdir "$APPDIR" || die "Failed to mkdir $APPDIR"
 mkdir -p "$SRCDIR" || die "Failed to mkdir $SRCDIR"
@@ -62,7 +91,7 @@ for i in `ldd "$BIN" | sed 's/\t/ /g' | cut -d' ' -f 4`
 do
     cp -vfp "$i" "$APPDIR/inst/lib"
 done
-for lib in "$@"
+for lib in $OTHERLIBS
 do
     for i in `ldd "$lib" | sed 's/\t/ /g' | cut -d' ' -f 4`
     do
@@ -93,21 +122,24 @@ export LD_LIBRARY_PATH
 exec "$APPDIR/inst/bin/'$BINNAME'" "$@"' > "$APPDIR/$BINNAME"
 chmod 0755 "$APPDIR/$BINNAME"
 
-# Remove the stupid stuff
-for lib in $LIBC
+# Remove the excluded stuff
+for lib in $LIBC $EXCLUSION
 do
     rm -vf "$APPDIR"/inst/lib/$lib*
 done
 
 # Get sources
-for lib in "$APPDIR"/inst/lib/*
-do
-    libb=`basename "$lib"`
-    echo "Getting source for $libb"
-    pkg=`dpkg-query -S "$libb" | grep -vE '^(ia32-libs|lib32|gcc|libgcc|libstdc)' | head -n 1 | sed 's/:.*//'`
-    pushd "$SRCDIR"
-    apt-get -d source "$pkg"
-    popd
-done
+if [ "$SRCDIR" ]
+then
+    for lib in "$APPDIR"/inst/lib/*
+    do
+        libb=`basename "$lib"`
+        echo "Getting source for $libb"
+        pkg=`dpkg-query -S "$libb" | grep -vE '^(ia32-libs|lib32|gcc|libgcc|libstdc)' | head -n 1 | sed 's/:.*//'`
+        pushd "$SRCDIR"
+        apt-get -d source "$pkg"
+        popd
+    done
+fi
 
 LD_LIBRARY_PATH="$APPDIR/inst/lib" ldd "$APPDIR/inst/bin/$BINNAME"
