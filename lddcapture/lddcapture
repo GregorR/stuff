@@ -82,9 +82,12 @@ do
 done
 
 mkdir "$APPDIR" || die "Failed to mkdir $APPDIR"
-mkdir -p "$SRCDIR" || die "Failed to mkdir $SRCDIR"
 mkdir -p "$APPDIR/inst/bin"
 mkdir -p "$APPDIR/inst/lib"
+if [ "$SRCDIR" ]
+then
+    mkdir -p "$SRCDIR" || die "Failed to mkdir $SRCDIR"
+fi
 
 # Copy in the libraries
 for i in `ldd "$BIN" | sed 's/\t/ /g' | cut -d' ' -f 4`
