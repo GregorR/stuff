@@ -22,6 +22,7 @@ char *nick, *channel, *sockName;
 /* other #defines */
 #define SOCK_BUF_SZ 1024
 #define PING_TIME (60*5)
+#define PONG_TIME (60)
 #define MAX_MSG_LEN 512
 #define IRC_MAX_ARGS 10
 
@@ -31,7 +32,12 @@ void ircRead(int, short, void *);
 void handleMessage(int argc, char **args);
 void sockRead(int, short, void *);
 void ping(int, short, void *);
+void pong(int, short, void *);
 void logPrint(const char *format, ...);
+char *timestamp();
+
+struct event pongtimer;
+int gotpong;
 
 FILE *logfile;
 
@@ -85,6 +91,7 @@ int main(int argc, char **argv)
     tv.tv_usec = 0;
     evtimer_set(&ptimer, ping, NULL);
     evtimer_add(&ptimer, &tv);
+    evtimer_set(&pongtimer, pong, NULL);
 
     return event_loop(0);
 }
@@ -107,7 +114,7 @@ void ircRead(int fd, short i0, void *i1)
     /* look for \r\n */
     while ((endl = strstr(ircBuf.buf, "\r\n"))) {
         *endl = '\0';
-        fprintf(logfile, "< %s\r\n", ircBuf.buf);
+        fprintf(logfile, "< %s %s\r\n", timestamp(), ircBuf.buf);
         fflush(logfile);
 
         if (ircBuf.buf[0] == ':') {
@@ -283,7 +290,24 @@ void sockRead(int fd, short i0, void *i1)
 
 void ping(int i0, short i1, void *i2)
 {
+    struct timeval tv;
+
     logPrint("PING :localhost\r\n");
+
+    /* wait for a pong */
+    gotpong = 0;
+    tv.tv_sec = PONG_TIME;
+    tv.tv_usec = 0;
+    evtimer_add(&pongtimer, &tv);
+}
+
+void pong(int i0, short i1, void *i2)
+{
+    if (!gotpong) {
+        /* yuh oh! */
+        exit(1);
+    }
+    evtimer_del(&pongtimer);
 }
 
 void logPrint(const char *format, ...)
@@ -299,6 +323,20 @@ void logPrint(const char *format, ...)
     printf("%s", buf);
     fflush(stdout);
 
-    fprintf(logfile, "> %s", buf);
+    fprintf(logfile, "> %s %s", timestamp(), buf);
     fflush(logfile);
+}
+
+
+#define TS_BUF_SZ 1024
+static char tsbuf[TS_BUF_SZ];
+char *timestamp()
+{
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) == 0) {
+        sprintf(tsbuf, "%d %d", tv.tv_sec, tv.tv_usec);
+    } else {
+        sprintf(tsbuf, "? ?");
+    }
+    return tsbuf;
 }
