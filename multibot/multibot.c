@@ -146,6 +146,9 @@ void ircRead(int fd, short i0, void *i1)
                     /* pong! */
                     logPrint("PONG :localhost\r\n");
 
+                } else if (!strcmp(args[1], "PONG")) {
+                    gotpong = 1;
+
                 } else {
                     handleMessage(argc, args);
 
@@ -155,6 +158,9 @@ void ircRead(int fd, short i0, void *i1)
         } else if (!strncmp(ircBuf.buf, "PING", 4)) {
             /* pong! */
             logPrint("PONG :localhost\r\n");
+
+        } else if (!strncmp(ircBuf.buf, "PONG", 4)) {
+            gotpong = 1;
 
         }
 
@@ -322,6 +328,9 @@ void logPrint(const char *format, ...)
 
     printf("%s", buf);
     fflush(stdout);
+
+    /* don't log it in certain "private" cases */
+    if (!strncmp(buf, "PRIVMSG NickServ", 15) || !strncmp(buf, "NICKSERV", 8)) return;
 
     fprintf(logfile, "> %s %s", timestamp(), buf);
     fflush(logfile);
