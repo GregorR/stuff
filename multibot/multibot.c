@@ -1,3 +1,25 @@
+/*
+ * Copyright (C) 2009-2011 Gregor Richards
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -36,7 +58,7 @@ void pong(int, short, void *);
 void logPrint(const char *format, ...);
 char *timestamp();
 
-struct event pongtimer;
+struct event pingtimer, pongtimer;
 int gotpong;
 
 FILE *logfile;
@@ -45,7 +67,7 @@ int main(int argc, char **argv)
 {
     struct sockaddr_un sun;
     int sock, tmpi;
-    struct event ircEv, sockEv, ptimer;
+    struct event ircEv, sockEv;
     struct timeval tv;
 
     if (argc != 4) {
@@ -89,8 +111,8 @@ int main(int argc, char **argv)
 
     tv.tv_sec = PING_TIME;
     tv.tv_usec = 0;
-    evtimer_set(&ptimer, ping, NULL);
-    evtimer_add(&ptimer, &tv);
+    evtimer_set(&pingtimer, ping, NULL);
+    evtimer_add(&pingtimer, &tv);
     evtimer_set(&pongtimer, pong, NULL);
 
     return event_loop(0);
@@ -299,6 +321,11 @@ void ping(int i0, short i1, void *i2)
     struct timeval tv;
 
     logPrint("PING :localhost\r\n");
+
+    /* send another ping */
+    tv.tv_sec = PING_TIME;
+    tv.tv_usec = 0;
+    evtimer_add(&pingtimer, &tv);
 
     /* wait for a pong */
     gotpong = 0;
