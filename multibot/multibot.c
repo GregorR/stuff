@@ -259,6 +259,21 @@ void handleMessage(int argc, char **args)
             cmdname.bufused -= 11; /* /tr_hx.cmd\0 */
         }
 
+        /* check the chan/nochan version */
+        if (argc > 2) {
+            if (args[2][0] == '#') {
+                /* seems to be a channel */
+                WRITE_BUFFER(cmdname, "-chan.cmd", 10);
+            } else {
+                WRITE_BUFFER(cmdname, "-user.cmd", 10);
+            }
+            if (access(cmdname.buf, X_OK) == 0) {
+                found = 1;
+                break;
+            }
+            cmdname.bufused -= 10;
+        }
+
         /* then check with just .cmd */
         WRITE_BUFFER(cmdname, ".cmd", 5);
         if (access(cmdname.buf, X_OK) == 0) {
