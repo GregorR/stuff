@@ -108,18 +108,19 @@ int main(int argc, char **argv)
         int sock, conn;
         struct sockaddr_in sin;
 
-        if (fork() == 0) {
-            daemon(0, 0);
-        } else {
-            return 0;
-        }
-
         /* listen for connections */
         SF(sock, socket, -1, (AF_INET, SOCK_STREAM, 0));
         sin.sin_family = AF_INET;
         sin.sin_port = htons(atoi(port));
         sin.sin_addr.s_addr = 0;
         SF(tmpi, bind, -1, (sock, (struct sockaddr *) &sin, sizeof(sin)));
+
+        if (fork() == 0) {
+            daemon(0, 0);
+        } else {
+            return 0;
+        }
+
         while (!listen(sock, 32)) {
             conn = accept(sock, NULL, NULL);
             if (conn >= 0) {
@@ -267,6 +268,7 @@ void pingpong(int sock, char **cmd)
 
 broken:
     /* our connection was lost, things are bad! */
+    close(sock);
     if (cmd) {
         execvp(cmd[0], cmd);
         fprintf(stderr, "execvp failed.\n");
