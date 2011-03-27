@@ -245,6 +245,8 @@ void pingpong(int sock, char **cmd)
                 opongs++;
             }
         }
+
+        ipings = opongs = opings = ipongs = 0;
     }
 
 broken:
