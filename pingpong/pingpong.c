@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
             /* wait for children */
             for (i = 0; i < curChild; i++) {
-                if (waitpid(children[i], NULL, WNOHANG) != -1) {
+                if (waitpid(children[i], NULL, WNOHANG) == children[i]) {
                     /* that child is done */
                     memmove(children + i, children + i + 1, (curChild - i - 1) * sizeof(pid_t));
                     i--;
