@@ -30,6 +30,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -41,12 +42,16 @@ int pingTime = 300;
 int pongTime = 15;
 int sendTime = 15;
 
+#define MAXCONN 1024
+
 int main(int argc, char **argv)
 {
     int server = 0;
     char *arg, *remoteHost = NULL, *port = NULL;
     char **cmd = NULL;
     int i, tmpi;
+    pid_t children[MAXCONN];
+    int curChild = 0;
 
 #define NEXTARG do { \
     if (i >= argc - 1) { \
@@ -119,9 +124,20 @@ int main(int argc, char **argv)
             conn = accept(sock, NULL, NULL);
             if (conn >= 0) {
                 /* handle this in another fork */
-                if (fork() == 0) {
+                children[curChild] = fork();
+                if (children[curChild] == 0) {
                     pingpong(conn, cmd);
                     return 0;
+                }
+                curChild++;
+            }
+
+            /* wait for children */
+            for (i = 0; i < curChild; i++) {
+                if (waitpid(children[i], NULL, WNOHANG) != -1) {
+                    /* that child is done */
+                    memmove(children + i, children + i + 1, (curChild - i - 1) * sizeof(pid_t));
+                    i--;
                 }
             }
         }
