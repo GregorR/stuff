@@ -11,6 +11,6 @@ then
     exit 1
 fi
 
-cvs up || die 'Failed to cvs up.'
+cvs up -d || die 'Failed to cvs up.'
 hg addr || die 'Failed to hg addr.'
 hg commit -m 'cvs up' || die 'Failed to hg commit.'
