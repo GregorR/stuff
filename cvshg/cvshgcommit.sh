@@ -14,14 +14,21 @@ fi
 HGREV=0
 if [ "$1" ]
 then
+    OHGREV="tip"
     HGREV="$1"
 else
-    HGREV=`hg id -n || die "Failed to get hg revision."`
-    HGREV=$((HGREV + 1))
+    OHGREV=`hg id -n || die "Failed to get hg revision."`
+    HGREV=$((OHGREV + 1))
     echo "Detected revision $HGREV"
 fi
 
 hg up -r"$HGREV" || die "Failed to hg up"
+
+if [ `hg id -n` != "$HGREV" ]
+then
+    hg up -r"$OHGREV"
+    die "I'm not on revision $HGREV at all"'!'
+fi
 
 # Add/remove files
 ADDR=no
