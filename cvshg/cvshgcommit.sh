@@ -47,6 +47,6 @@ then
 fi
 
 # Then commit
-hg log -r"$HGREV" --style compact | perl -pe 's/  */ /g ; s/\n/ -- /g' > /tmp/log.$$ || die 'Failed to get log message.'
+hg log -r"$HGREV" --style compact | perl -pe 's/  */ /g ; s/\n/ -- /g ; s/[ -]*$//' > /tmp/log.$$ || die 'Failed to get log message.'
 cvs commit -F/tmp/log.$$ || die 'Failed to commit with /tmp/log.'$$
 rm -f /tmp/log.$$
