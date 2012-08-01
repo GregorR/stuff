@@ -14,6 +14,24 @@ if [ "$CRF" = "" ] ; then CRF=23 ; fi
 ENCOPTS="$5"
 PLAYOPTS="$6"
 
+REQUIRED="mplayer mencoder faac mkvmerge MP4Box"
+for req in $REQUIRED
+do
+    $req --help >& /dev/null
+    if [ "$?" = "127" ]
+    then
+        echo "$req not found."
+        exit 1
+    fi
+done
+
+midentify() {
+    mplayer -vo null -ao null -frames 0 -identify "$@" 2>/dev/null |
+        sed -ne '/^ID_/ {
+                          s/[]()|&;<>`'"'"'\\!$" []/\\&/g;p
+                        }'
+}
+
 
 ###############################################################################
 # AUDIO
@@ -128,7 +146,7 @@ do
         -sid $i -vobsubout $OUT_NSP.$i \
         -o /dev/null < /dev/null &
     SUB_MKV="$SUB_MKV $OUT_NSP.$i.idx"
-    #SUB_MP4="$SUB_MP4 -add $OUT_NSP.$i.idx" FIXME: seems broken with MP4Box
+    SUB_MP4="$SUB_MP4 -add $OUT_NSP.$i.idx" # FIXME: seems broken with MP4Box
 done
 
 
@@ -144,20 +162,20 @@ FPS="`fps $IDENT`"
 
 # Only one pass for CRF
 mencoder \
-   -ovc x264 -oac copy \
+   -ovc x264 -nosound -of lavf \
    -x264encopts crf=$CRF:threads=auto \
    $ENCOPTS \
    $IN \
-   -o "$OUT".vid.avi
+   -o "$OUT".vid.h264
 
 # Make sure audio is done
 wait
 
 # Mux it
 mkvmerge \
-    -A "$OUT".vid.avi $AUDIO_MKV $SUB_MKV \
+    -A "$OUT".vid.h264 $AUDIO_MKV $SUB_MKV \
     -o "$OUT".mkv
-ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
+#ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
 rm -f "$OUT".mp4
 MP4Box \
     -inter 500 -isma \
@@ -173,4 +191,4 @@ for i in $SUB_TRACKS
 do
     rm -f $OUT_NSP.$i.idx $OUT_NSP.$i.sub
 done
-rm -f "$OUT".log "$OUT".log.temp "$OUT".vid.avi "$OUT".vid.h264
+rm -f "$OUT".log "$OUT".log.temp "$OUT".vid.h264
