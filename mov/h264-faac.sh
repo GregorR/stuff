@@ -1,7 +1,7 @@
 #!/bin/bash -x
 if [ ! "$3" ]
 then
-    echo 'Use: threepass.sh <input file> <identification file> <output file> [video crf] [encoding options] [playback options]'
+    echo 'Use: h264-faac.sh <input file> <identification file> <output file> [video crf] [encoding options] [playback options]'
     exit 1
 fi
 
