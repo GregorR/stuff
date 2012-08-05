@@ -162,20 +162,26 @@ FPS="`fps $IDENT`"
 
 # Only one pass for CRF
 mencoder \
-   -ovc x264 -nosound -of lavf \
+   -ovc x264 -oac copy \
    -x264encopts crf=$CRF:threads=auto \
    $ENCOPTS \
    $IN \
-   -o "$OUT".vid.h264
+   -o "$OUT".vid.avi ||
+mencoder \
+   -ovc x264 -oac pcm \
+   -x264encopts crf=$CRF:threads=auto \
+   $ENCOPTS \
+   $IN \
+   -o "$OUT".vid.avi
 
 # Make sure audio is done
 wait
 
 # Mux it
+ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
 mkvmerge \
     -A "$OUT".vid.h264 $AUDIO_MKV $SUB_MKV \
     -o "$OUT".mkv
-#ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
 rm -f "$OUT".mp4
 MP4Box \
     -inter 500 -isma \
@@ -191,4 +197,4 @@ for i in $SUB_TRACKS
 do
     rm -f $OUT_NSP.$i.idx $OUT_NSP.$i.sub
 done
-rm -f "$OUT".log "$OUT".log.temp "$OUT".vid.h264
+rm -f "$OUT".log "$OUT".log.temp "$OUT".vid.avi "$OUT".vid.h264
