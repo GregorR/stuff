@@ -142,12 +142,17 @@ waitRetryNew:
     goto retryNew;
 }
 
-int main()
+int main(int argc, char **argv)
 {
     int tmpi;
     pthread_t writerTh;
     ssize_t rd;
     Buffer *cur, *tail;
+
+    if (argc > 1) {
+        fprintf(stderr, "Use: command | writebuffer > file\n");
+        return 1;
+    }
 
     inBuffer.type = outBuffer.type = BUF_TYPE_HEAD;
 
