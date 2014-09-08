@@ -1,8 +1,7 @@
 #!/bin/bash -x
-# Deps: mplayer, midentify script, mencoder, x264 (mplayer support), faac, ffmpeg, GPAC (MP4Box) 
 if [ ! "$3" ]
 then
-    echo 'Use: threepass.sh <input file> <identification file> <output file> [video bitrate] [encoding options] [playback options]'
+    echo 'Use: lossless.sh <input file> <identification file> <output file> [encoding options] [playback options]'
     exit 1
 fi
 
@@ -10,10 +9,26 @@ IN="$1"
 IDENT="$2"
 OUT="$3"
 OUT_NSP=`echo $OUT | sed 's/ /_/g'`
-VBR="$4"
-if [ "$VBR" = "" ] ; then VBR=800 ; fi
-ENCOPTS="$5"
-PLAYOPTS="$6"
+ENCOPTS="$4"
+PLAYOPTS="$5"
+
+REQUIRED="mplayer mencoder flac mkvmerge MP4Box"
+for req in $REQUIRED
+do
+    $req --help >& /dev/null
+    if [ "$?" = "127" ]
+    then
+        echo "$req not found."
+        exit 1
+    fi
+done
+
+midentify() {
+    mplayer -vo null -ao null -frames 0 -identify "$@" 2>/dev/null |
+        sed -ne '/^ID_/ {
+                          s/[]()|&;<>`'"'"'\\!$" []/\\&/g;p
+                        }'
+}
 
 
 ###############################################################################
@@ -69,7 +84,7 @@ do
        $PLAYOPTS \
        $IN \
        < /dev/null &
-    faac $OUT_NSP.wav.$i -o $OUT_NSP.$i.m4a < /dev/null &
+    flac $OUT_NSP.wav.$i -o $OUT_NSP.$i.flac < /dev/null &
 
     # And a stereo channel if necessary
     if [ "$NCH" = "6" -a "$CONVERT_SURROUND" = "yes" ]
@@ -81,7 +96,7 @@ do
             $PLAYOPTS \
             $IN \
             < /dev/null &
-        faac $OUT_NSP.wav.stereo.$i -o $OUT_NSP.$i.stereo.m4a < /dev/null &
+        flac $OUT_NSP.wav.stereo.$i -o $OUT_NSP.$i.stereo.flac < /dev/null &
     fi
 done
 
@@ -92,13 +107,13 @@ do
     ALANG=`aid_lang "$IDENT" $i`
     if [ "$NCH" = "2" ]
     then
-        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.m4a"
-        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.m4a#audio:lang=$ALANG"
+        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.flac"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.flac#audio:lang=$ALANG"
 
     elif [ "$CONVERT_SURROUND" = "yes" ]
     then
-        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.stereo.m4a"
-        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.stereo.m4a#audio:lang=$ALANG"
+        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.stereo.flac"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.stereo.flac#audio:lang=$ALANG"
     fi
 done
 for i in $AUDIO_TRACKS
@@ -107,8 +122,8 @@ do
     ALANG=`aid_lang "$IDENT" $i`
     if [ "$NCH" != "2" ]
     then
-        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.m4a"
-        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.m4a#audio:lang=$ALANG"
+        AUDIO_MKV="$AUDIO_MKV --language -1:$ALANG $OUT_NSP.$i.flac"
+        AUDIO_MP4="$AUDIO_MP4 -add $OUT_NSP.$i.flac#audio:lang=$ALANG"
     fi
 done
 
@@ -129,7 +144,7 @@ do
         -sid $i -vobsubout $OUT_NSP.$i \
         -o /dev/null < /dev/null &
     SUB_MKV="$SUB_MKV $OUT_NSP.$i.idx"
-    #SUB_MP4="$SUB_MP4 -add $OUT_NSP.$i.idx" FIXME: seems broken with MP4Box
+    SUB_MP4="$SUB_MP4 -add $OUT_NSP.$i.idx" # FIXME: seems broken with MP4Box
 done
 
 
@@ -143,29 +158,16 @@ fps() {
 }
 FPS="`fps $IDENT`"
 
-# Pass 1
+# Only one pass for lossless
 mencoder \
    -ovc x264 -oac copy \
-   -x264encopts bitrate=$VBR:pass=1:threads=auto \
-   -passlogfile "$OUT".log \
+   -x264encopts qp=0:threads=auto \
    $ENCOPTS \
    $IN \
-   -o /dev/null
-
-# Pass 2
+   -o "$OUT".vid.avi ||
 mencoder \
-   -ovc x264 -oac copy \
-   -x264encopts bitrate=$VBR:pass=3:threads=auto \
-   -passlogfile "$OUT".log \
-   $ENCOPTS \
-   $IN \
-   -o /dev/null
-
-# Pass 3
-mencoder \
-   -ovc x264 -oac copy \
-   -x264encopts bitrate=$VBR:pass=3:threads=auto \
-   -passlogfile "$OUT".log \
+   -ovc x264 -oac pcm \
+   -x264encopts qp=0:threads=auto \
    $ENCOPTS \
    $IN \
    -o "$OUT".vid.avi
@@ -174,23 +176,23 @@ mencoder \
 wait
 
 # Mux it
-mkvmerge \
-    -A "$OUT".vid.avi $AUDIO_MKV $SUB_MKV \
-    -o "$OUT".mkv
 ffmpeg -i "$OUT".vid.avi -vcodec copy -an "$OUT".vid.h264
-rm -f "$OUT".mp4
-MP4Box \
-    -inter 500 -isma \
-    -add "$OUT.vid.h264#video" -fps $FPS $AUDIO_MP4 $SUB_MP4 \
-    "$OUT".mp4
+mkvmerge \
+    -A "$OUT".vid.h264 $AUDIO_MKV $SUB_MKV \
+    -o "$OUT".mkv
+#rm -f "$OUT".mp4
+#MP4Box \
+#    -inter 500 -isma \
+#    -add "$OUT.vid.h264#video" -fps $FPS $AUDIO_MP4 $SUB_MP4 \
+#    "$OUT".mp4
 
 # Clean up
 for i in $AUDIO_TRACKS
 do
-    rm -f $OUT_NSP.wav.$i $OUT_NSP.$i.m4a $OUT_NSP.wav.stereo.$i $OUT_NSP.$i.stereo.m4a
+    rm -f $OUT_NSP.wav.$i $OUT_NSP.$i.flac $OUT_NSP.wav.stereo.$i $OUT_NSP.$i.stereo.flac
 done
 for i in $SUB_TRACKS
 do
     rm -f $OUT_NSP.$i.idx $OUT_NSP.$i.sub
 done
-rm -f "$OUT".log "$OUT".log.temp "$OUT".log.mbtree "$OUT".vid.avi "$OUT".vid.h264
+rm -f "$OUT".log "$OUT".log.temp "$OUT".vid.avi "$OUT".vid.h264
