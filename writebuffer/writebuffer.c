@@ -7,8 +7,13 @@
 
 #include "helpers.h"
 
-#define BUFSZ (16*1024*1024)
+#define MB    *1024*1024
+#define BUFSZ (16 MB)
 #define MAXBUFS 128
+
+#define ANSI_UP         "\x1B[A"
+#define ANSI_DOWN_BACK  "\x1B[B\r"
+#define ANSI_CLEAR      "\x1B[K"
 
 #define BUF_TYPE_NORMAL     0
 #define BUF_TYPE_END        1
@@ -26,6 +31,7 @@ typedef struct Buffer_ {
 /* the in buffer */
 static Buffer inBuffer, *inBufferTail;
 static pthread_mutex_t inBufferTailLock = PTHREAD_MUTEX_INITIALIZER;
+static sem_t inBufferSem;
 
 /* and the out buffer */
 static Buffer outBuffer, *outBufferTail;
@@ -39,6 +45,7 @@ static unsigned long bufCt = 0;
 static void *writer(void *ignore)
 {
     Buffer *cur, *tail;
+    unsigned long written = 0;
 
     while (1) {
         sem_wait(&outBufferSem);
@@ -77,6 +84,13 @@ static void *writer(void *ignore)
         pthread_mutex_unlock(&cur->lock);
         pthread_mutex_unlock(&tail->lock);
         pthread_mutex_unlock(&inBufferTailLock);
+        sem_post(&inBufferSem);
+
+        /* display our status */
+        written++;
+        fprintf(stderr, ANSI_UP "buffer: %luMB    written: %luMB" ANSI_CLEAR ANSI_DOWN_BACK,
+                bufCt * BUFSZ / (1 MB),
+                written * BUFSZ / (1 MB));
     }
 
     return NULL;
@@ -86,6 +100,8 @@ static void *writer(void *ignore)
 static Buffer *newBuffer()
 {
     static Buffer *cur;
+
+retryNew:
     pthread_mutex_lock(&inBuffer.lock);
     cur = inBuffer.next;
     pthread_mutex_lock(&cur->lock);
@@ -94,20 +110,36 @@ static Buffer *newBuffer()
         inBuffer.next = cur->next;
         pthread_mutex_unlock(&cur->lock);
         pthread_mutex_unlock(&inBuffer.lock);
+        sem_wait(&inBufferSem);
         cur->length = 0;
         return cur;
     }
     pthread_mutex_unlock(&cur->lock);
     pthread_mutex_unlock(&inBuffer.lock);
 
+    if (bufCt >= MAXBUFS) {
+        /* too many! */
+        goto waitRetryNew;
+    }
+
     /* we need to allocate a new one */
-    /* FIXME: shouldn't need/use SF here */
-    SF(cur, malloc, NULL, (sizeof(Buffer)));
-    SF(cur->buf, malloc, NULL, (BUFSZ));
+    cur = malloc(sizeof(Buffer));
+    if (cur == NULL) goto waitRetryNew;
+    cur->buf = malloc(BUFSZ);
+    if (cur->buf == NULL) {
+        free(cur);
+        goto waitRetryNew;
+    }
+    bufCt++;
     pthread_mutex_init(&cur->lock, NULL);
     cur->type = BUF_TYPE_NORMAL;
     cur->length = 0;
     return cur;
+
+waitRetryNew:
+    sem_wait(&inBufferSem);
+    sem_post(&inBufferSem);
+    goto retryNew;
 }
 
 int main()
@@ -119,6 +151,7 @@ int main()
 
     inBuffer.type = outBuffer.type = BUF_TYPE_HEAD;
 
+    sem_init(&inBufferSem, 0, 0);
     sem_init(&outBufferSem, 0, 0);
 
     /* make our in and out buffer tails */
