@@ -79,6 +79,7 @@ static void *writer(void *ignore)
         pthread_mutex_unlock(&outBuffer.lock);
 
 #ifdef FILE_BUFFER
+        pthread_mutex_unlock(&cur->lock);
         /* read it in */
         SF(fd, open, -1, (cur->file, O_RDONLY));
         rd = read(fd, buf, (BUFSZ));
@@ -123,7 +124,6 @@ static void *writer(void *ignore)
         sem_post(&inBufferSem);
 #else
         /* and free it up */
-        pthread_mutex_unlock(&cur->lock);
         if (cur->type == BUF_TYPE_END) {
             free(cur);
             break;
@@ -183,13 +183,13 @@ retryNew:
         goto waitRetryNew;
     }
     bufCt++;
-    pthread_mutex_init(&cur->lock, NULL);
     cur->length = 0;
 #else
     SF(cur, malloc, NULL, (sizeof(Buffer)));
     sprintf(cur->file, ".buf.%lu", bufCt++);
 #endif
 
+    pthread_mutex_init(&cur->lock, NULL);
     cur->type = BUF_TYPE_NORMAL;
     return cur;
 
@@ -294,6 +294,8 @@ int main(int argc, char **argv)
             cur->type = BUF_TYPE_TAIL;
 #ifndef FILE_BUFFER
             cur->buf = NULL;
+#else
+            len = 0;
 #endif
 
             outBufferTail = cur;
