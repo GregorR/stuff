@@ -134,11 +134,11 @@ static void *writer(void *ignore)
         /* display our status */
         written++;
 #ifndef FILE_BUFFER
-        fprintf(stderr, ANSI_UP "(file) buffer: %luMB    written: %luMB" ANSI_CLEAR ANSI_DOWN_BACK,
+        fprintf(stderr, ANSI_UP "(mem)  buffer: %luMB    written: %luMB" ANSI_CLEAR ANSI_DOWN_BACK,
                 bufCt * BUFSZ / (1 MB),
                 written * BUFSZ / (1 MB));
 #else
-        fprintf(stderr, ANSI_UP ANSI_UP "(mem)  buffer: %luMB    written: %luMB" ANSI_CLEAR ANSI_DOWN_BACK ANSI_DOWN_BACK,
+        fprintf(stderr, ANSI_UP ANSI_UP "(file) buffer: %luMB    written: %luMB" ANSI_CLEAR ANSI_DOWN_BACK ANSI_DOWN_BACK,
                 (bufCt - written) * BUFSZ / (1 MB),
                 written * BUFSZ / (1 MB));
 #endif
