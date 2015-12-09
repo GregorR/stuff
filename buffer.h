@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009, 2010 Gregor Richards
+ * Copyright (C) 2009, 2010, 2015 Gregor Richards
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -161,7 +161,7 @@ BUFFER(int, int);
 #define READ_FILE_BUFFER(buffer, fh) \
 { \
     size_t _rd; \
-    while ((_rd = fread(BUFFER_END(buffer), 1, BUFFER_SPACE(buffer), (fh))) > 0) { \
+    while ((_rd = fread(BUFFER_END(buffer), sizeof(*(buffer).buf), BUFFER_SPACE(buffer), (fh))) > 0) { \
         STEP_BUFFER(buffer, _rd); \
         if (BUFFER_SPACE(buffer) <= 0) { \
             EXPAND_BUFFER(buffer); \
